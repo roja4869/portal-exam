@@ -83,7 +83,15 @@ router.post('/exams/:examId/questions', async (req, res) => {
         
         const result = await dbRun(
             'INSERT INTO questions (exam_id, type, text, options, correct_answer, test_cases, points) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            [examId, type, text, JSON.stringify(options), correct_answer, JSON.stringify(test_cases), points || 1]
+            [
+                examId, 
+                type, 
+                text, 
+                JSON.stringify(options || []), 
+                correct_answer || '', 
+                JSON.stringify(test_cases || []), 
+                points || 1
+            ]
         );
         res.status(201).json({ id: result.lastID, message: 'Question added successfully' });
     } catch (error) {
