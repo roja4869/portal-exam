@@ -61,7 +61,11 @@ const dbAll = async (sql, params = []) => {
 
 const dbRun = async (sql, params = []) => {
     const res = await client.execute({ sql, args: params });
-    return { lastID: res.lastInsertRowid, changes: res.rowsAffected };
+    // Convert BigInt to String to prevent JSON serialization errors
+    return { 
+        lastID: res.lastInsertRowid ? res.lastInsertRowid.toString() : null, 
+        changes: res.rowsAffected 
+    };
 };
 
 module.exports = { client, dbGet, dbAll, dbRun };
