@@ -12,6 +12,10 @@ services:
         value: production
       - key: NODE_VERSION
         value: 20
+      - key: TURSO_URL
+        value: libsql://portal-exam-roja4869.aws-ap-south-1.turso.io
+      - key: TURSO_AUTH_TOKEN
+        value: eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3Nzc0NTQ4NzYsImlkIjoiMDE5ZGQ4OTAtYjQwMS03Y2NhLTk4YTktNmZkMjM5MzU2N2M3IiwicmlkIjoiM2E1M2FiZmQtOWM2Mi00NWI2LWE1YjAtNjNhZjBjZDM0Y2UzIn0.h68C9xOOpdhrfoVPmK6MK2Uy4iZln5ghZGFNlAdsxmj-3zenCs_aSIXi0i4O04n-HJqEX3CXVJ9izYffXvf7Ag
       - key: JWT_SECRET
         generateValue: true
       - key: PORT

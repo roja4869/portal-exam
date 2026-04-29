@@ -1,76 +1,67 @@
-const sqlite3 = require('sqlite3').verbose();
+const { createClient } = require('@libsql/client');
 const fs = require('fs');
 const path = require('path');
 const dotenv = require('dotenv');
 
 dotenv.config();
 
-const dbPath = process.env.DATABASE_FILE || './database.sqlite';
-const db = new sqlite3.Database(dbPath, (err) => {
-    if (err) {
-        console.error('Error connecting to the database:', err.message);
-    } else {
-        console.log('Connected to the SQLite database.');
-        initDb();
-    }
+const client = createClient({
+    url: process.env.TURSO_URL || 'file:database.sqlite',
+    authToken: process.env.TURSO_AUTH_TOKEN,
 });
 
-function initDb() {
-    const schemaPath = path.join(__dirname, 'schema.sql');
-    if (fs.existsSync(schemaPath)) {
-        const schema = fs.readFileSync(schemaPath, 'utf8');
-        db.exec(schema, (err) => {
-            if (err) {
-                console.error('Error initializing database schema:', err.message);
-            } else {
-                console.log('Database schema initialized.');
-                seedAdmin();
+async function initDb() {
+    try {
+        const schemaPath = path.join(__dirname, 'schema.sql');
+        if (fs.existsSync(schemaPath)) {
+            const schema = fs.readFileSync(schemaPath, 'utf8');
+            // Split schema into individual statements as executeMultiple is better for this
+            const statements = schema.split(';').filter(s => s.trim() !== '');
+            for (const statement of statements) {
+                await client.execute(statement);
             }
-        });
+            console.log('Database schema initialized on Turso.');
+            await seedAdmin();
+        }
+    } catch (err) {
+        console.error('Error initializing Turso database:', err.message);
     }
 }
 
-function seedAdmin() {
+async function seedAdmin() {
     const bcrypt = require('bcryptjs');
-    db.get("SELECT id FROM users WHERE role = 'admin'", async (err, row) => {
-        if (err) {
-            console.error('Error checking for admin:', err);
-            return;
-        }
-        if (!row) {
+    try {
+        const res = await client.execute("SELECT id FROM users WHERE role = 'admin'");
+        if (res.rows.length === 0) {
             const hashedPassword = await bcrypt.hash('admin123', 10);
-            db.run(
-                "INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)",
-                ['Admin', 'admin@example.com', hashedPassword, 'admin'],
-                (err) => {
-                    if (err) console.error('Error creating default admin:', err);
-                    else console.log('Default admin created: admin@example.com / admin123');
-                }
-            );
+            await client.execute({
+                sql: "INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)",
+                args: ['Admin', 'admin@example.com', hashedPassword, 'admin']
+            });
+            console.log('Default admin created on Turso: admin@example.com / admin123');
         }
-    });
+    } catch (err) {
+        console.error('Error seeding admin on Turso:', err);
+    }
 }
 
-// Wrapper for promises
-const dbGet = (sql, params = []) => new Promise((resolve, reject) => {
-    db.get(sql, params, (err, row) => {
-        if (err) reject(err);
-        else resolve(row);
-    });
-});
+// Start initialization
+initDb();
 
-const dbAll = (sql, params = []) => new Promise((resolve, reject) => {
-    db.all(sql, params, (err, rows) => {
-        if (err) reject(err);
-        else resolve(rows);
-    });
-});
+// Wrapper for compatibility with existing code
+const dbGet = async (sql, params = []) => {
+    const res = await client.execute({ sql, args: params });
+    return res.rows[0] || null;
+};
 
-const dbRun = (sql, params = []) => new Promise((resolve, reject) => {
-    db.run(sql, params, function (err) {
-        if (err) reject(err);
-        else resolve(this); // returns an object containing lastID and changes
-    });
-});
+const dbAll = async (sql, params = []) => {
+    const res = await client.execute({ sql, args: params });
+    return res.rows;
+};
 
-module.exports = { db, dbGet, dbAll, dbRun };
+const dbRun = async (sql, params = []) => {
+    const res = await client.execute({ sql, args: params });
+    return { lastID: res.lastInsertRowid, changes: res.rowsAffected };
+};
+
+module.exports = { client, dbGet, dbAll, dbRun };
