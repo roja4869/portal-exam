@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import { Trophy, Clock, Medal, ArrowLeft } from 'lucide-react';
 
@@ -7,8 +7,7 @@ const Leaderboard = () => {
   const { examId } = useParams();
   const [attempts, setAttempts] = useState([]);
   const [examTitle, setExamTitle] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchLeaderboard = async () => {
@@ -33,9 +32,9 @@ const Leaderboard = () => {
   return (
     <div className="max-w-4xl mx-auto p-6">
       <header className="flex items-center gap-6 mb-12">
-        <Link to="/dashboard" className="p-2 hover:bg-slate-800 rounded-lg transition-colors">
+        <button onClick={() => navigate(-1)} className="p-2 hover:bg-slate-800 rounded-lg transition-colors">
           <ArrowLeft size={24} />
-        </Link>
+        </button>
         <div>
           <h1 className="text-3xl font-bold">Leaderboard</h1>
           <p className="text-slate-400">{examTitle}</p>

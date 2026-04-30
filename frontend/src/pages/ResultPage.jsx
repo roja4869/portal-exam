@@ -86,7 +86,7 @@ const ResultPage = () => {
       </div>
 
       <div className="flex justify-center gap-4">
-        <Link to="/dashboard" className="btn-primary flex items-center gap-2">
+        <Link to="/student/dashboard" className="btn-primary flex items-center gap-2">
           <Home size={20} /> Back to Dashboard
         </Link>
         <Link to={`/leaderboard/${attempt.exam_id}`} className="btn-secondary flex items-center gap-2">

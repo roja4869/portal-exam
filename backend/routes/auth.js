@@ -6,8 +6,8 @@ const { dbGet, dbRun } = require('../database');
 
 router.post('/signup', async (req, res) => {
     try {
-        const { name, email, password, role } = req.body;
-        const userRole = role === 'admin' ? 'admin' : 'student';
+        const { name, email, password } = req.body;
+        const userRole = 'student'; // Force student role for public signup
 
         // Check if user exists
         const existingUser = await dbGet('SELECT * FROM users WHERE email = ?', [email]);

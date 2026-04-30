@@ -22,7 +22,7 @@ const ExamAttempt = () => {
         setLoading(false);
       } catch (err) {
         console.error('Failed to fetch exam', err);
-        navigate('/dashboard');
+        navigate('/student/dashboard');
       }
     };
     fetchExamData();

@@ -75,7 +75,7 @@ const CreateExam = () => {
         }
       }
 
-      navigate('/admin');
+      navigate('/admin/dashboard');
     } catch (err) {
       alert('Failed to save exam');
     }

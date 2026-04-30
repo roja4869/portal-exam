@@ -1,27 +1,42 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { UserPlus, ArrowLeft } from 'lucide-react';
+import { LogIn, ShieldCheck, GraduationCap, ArrowLeft } from 'lucide-react';
 
-const Signup = () => {
-  const [name, setName] = useState('');
+const RoleLogin = ({ expectedRole }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { signup } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
+
+  const isAdmin = expectedRole === 'admin';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
+
     try {
-      // Force student role in the request (though backend also forces it)
-      await signup({ name, email, password, role: 'student' });
-      navigate('/student/dashboard');
+      const data = await login(email, password);
+      
+      // Role validation
+      if (data.user.role !== expectedRole) {
+        // If wrong role, logout and show error
+        localStorage.removeItem('token');
+        setError(`Access Denied: This portal is for ${expectedRole}s only.`);
+        setLoading(false);
+        return;
+      }
+
+      if (data.user.role === 'admin') {
+        navigate('/admin/dashboard');
+      } else {
+        navigate('/student/dashboard');
+      }
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to sign up. Please try again.');
+      setError(err.response?.data?.error || 'Invalid email or password');
     } finally {
       setLoading(false);
     }
@@ -29,6 +44,7 @@ const Signup = () => {
 
   return (
     <div className="flex items-center justify-center min-h-screen p-4 bg-slate-900 relative">
+      {/* Back button */}
       <button 
         onClick={() => navigate('/')}
         className="absolute top-8 left-8 flex items-center gap-2 text-slate-400 hover:text-white transition-colors"
@@ -38,16 +54,25 @@ const Signup = () => {
       </button>
 
       <div className="w-full max-w-md p-8 glass-morphism relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-1 bg-indigo-600" />
+        {/* Top accent line */}
+        <div className={`absolute top-0 left-0 w-full h-1 ${isAdmin ? 'bg-purple-600' : 'bg-indigo-600'}`} />
         
         <div className="flex justify-center mb-6">
-          <div className="p-4 bg-indigo-600/20 rounded-2xl text-indigo-400">
-            <UserPlus size={40} />
+          <div className={`p-4 rounded-2xl ${isAdmin ? 'bg-purple-600/20' : 'bg-indigo-600/20'}`}>
+            {isAdmin ? (
+              <ShieldCheck size={40} className="text-purple-400" />
+            ) : (
+              <GraduationCap size={40} className="text-indigo-400" />
+            )}
           </div>
         </div>
-        
-        <h2 className="text-3xl font-bold text-center mb-2">Create Student Account</h2>
-        <p className="text-center text-slate-400 mb-8">Join the examination portal today</p>
+
+        <h2 className="text-3xl font-bold text-center mb-2">
+          {isAdmin ? 'Admin Portal' : 'Student Portal'}
+        </h2>
+        <p className="text-center text-slate-400 mb-8">
+          Enter your credentials to continue
+        </p>
         
         {error && (
           <div className="p-4 mb-6 text-sm text-red-400 bg-red-900/20 border border-red-900/50 rounded-xl flex items-start gap-3">
@@ -56,18 +81,7 @@ const Signup = () => {
           </div>
         )}
         
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-2 text-slate-300">Full Name</label>
-            <input 
-              type="text" 
-              className="w-full px-4 py-3 bg-slate-800/50 border border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all" 
-              placeholder="John Doe"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-            />
-          </div>
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div>
             <label className="block text-sm font-medium mb-2 text-slate-300">Email Address</label>
             <input 
@@ -94,18 +108,30 @@ const Signup = () => {
           <button 
             type="submit" 
             disabled={loading}
-            className={`w-full py-3 mt-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold transition-all shadow-lg shadow-indigo-600/20 transform active:scale-[0.98] ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
+            className={`w-full py-3 rounded-xl font-bold text-white transition-all transform active:scale-[0.98] ${
+              isAdmin 
+                ? 'bg-purple-600 hover:bg-purple-500 shadow-lg shadow-purple-600/20' 
+                : 'bg-indigo-600 hover:bg-indigo-500 shadow-lg shadow-indigo-600/20'
+            } ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
           >
-            {loading ? 'Creating Account...' : 'Sign Up'}
+            {loading ? 'Authenticating...' : 'Sign In'}
           </button>
         </form>
         
-        <p className="mt-8 text-center text-slate-400">
-          Already have an account? <Link to="/student/login" className="text-indigo-400 hover:text-indigo-300 font-semibold underline underline-offset-4">Sign In</Link>
-        </p>
+        {!isAdmin && (
+          <p className="mt-8 text-center text-slate-400">
+            New student? <Link to="/signup" className="text-indigo-400 hover:text-indigo-300 font-semibold underline underline-offset-4">Create an account</Link>
+          </p>
+        )}
+
+        {isAdmin && (
+          <p className="mt-8 text-center text-slate-500 text-xs">
+            Admin accounts are managed by the system administrator.
+          </p>
+        )}
       </div>
     </div>
   );
 };
 
-export default Signup;
+export default RoleLogin;

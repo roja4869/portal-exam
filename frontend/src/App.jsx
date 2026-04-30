@@ -1,7 +1,8 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import Login from './pages/Login';
+import LandingPage from './pages/LandingPage';
+import RoleLogin from './pages/RoleLogin';
 import Signup from './pages/Signup';
 import StudentDashboard from './pages/StudentDashboard';
 import AdminDashboard from './pages/AdminDashboard';
@@ -14,8 +15,16 @@ const ProtectedRoute = ({ children, role }) => {
   const { user, loading } = useAuth();
 
   if (loading) return <div className="flex items-center justify-center h-screen text-white">Loading...</div>;
-  if (!user) return <Navigate to="/login" />;
-  if (role && user.role !== role) return <Navigate to={user.role === 'admin' ? '/admin' : '/dashboard'} />;
+  
+  if (!user) {
+    // If not logged in, redirect to landing page
+    return <Navigate to="/" />;
+  }
+  
+  if (role && user.role !== role) {
+    // If role mismatch, redirect to respective dashboard
+    return <Navigate to={user.role === 'admin' ? '/admin/dashboard' : '/student/dashboard'} />;
+  }
 
   return children;
 };
@@ -24,12 +33,16 @@ function App() {
   return (
     <AuthProvider>
       <Router>
-        <div className="min-h-screen bg-slate-900 text-slate-100">
+        <div className="min-h-screen bg-slate-900 text-slate-100 font-sans">
           <Routes>
-            <Route path="/login" element={<Login />} />
+            {/* Public Routes */}
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/admin/login" element={<RoleLogin expectedRole="admin" />} />
+            <Route path="/student/login" element={<RoleLogin expectedRole="student" />} />
             <Route path="/signup" element={<Signup />} />
             
-            <Route path="/dashboard" element={
+            {/* Student Protected Routes */}
+            <Route path="/student/dashboard" element={
               <ProtectedRoute role="student">
                 <StudentDashboard />
               </ProtectedRoute>
@@ -47,13 +60,8 @@ function App() {
               </ProtectedRoute>
             } />
 
-            <Route path="/leaderboard/:examId" element={
-              <ProtectedRoute>
-                <Leaderboard />
-              </ProtectedRoute>
-            } />
-
-            <Route path="/admin" element={
+            {/* Admin Protected Routes */}
+            <Route path="/admin/dashboard" element={
               <ProtectedRoute role="admin">
                 <AdminDashboard />
               </ProtectedRoute>
@@ -71,7 +79,18 @@ function App() {
               </ProtectedRoute>
             } />
 
-            <Route path="/" element={<Navigate to="/login" />} />
+            {/* Mixed/Shared Protected Routes */}
+            <Route path="/leaderboard/:examId" element={
+              <ProtectedRoute>
+                <Leaderboard />
+              </ProtectedRoute>
+            } />
+
+            {/* Fallback */}
+            <Route path="/login" element={<Navigate to="/" />} />
+            <Route path="/dashboard" element={<Navigate to="/student/dashboard" />} />
+            <Route path="/admin" element={<Navigate to="/admin/dashboard" />} />
+            <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </div>
       </Router>
